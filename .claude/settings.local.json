@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(node build_app.js:*)",
+      "Bash(node -c:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)"
+    ]
+  }
+}
