@@ -23,11 +23,9 @@ function main(state) {
   }
 
   function encodeRandom(len) {
-    var bytes = new Uint8Array(len);
-    crypto.getRandomValues(bytes);
     var str = '';
     for (var i = 0; i < len; i++) {
-      str += CROCKFORD[bytes[i] % 32];
+      str += CROCKFORD[Math.floor(Math.random() * 32)];
     }
     return str;
   }
