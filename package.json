@@ -1,0 +1,18 @@
+{
+  "name": "flxify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Developer text utility tool with 109 executable scripts",
+  "scripts": {
+    "build": "node build_app.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "check": "node --check app.js",
+    "validate": "npm test && npm run build && npm run check"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "license": "MIT"
+}
