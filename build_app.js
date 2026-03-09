@@ -422,7 +422,7 @@ document.querySelectorAll('.faq-question').forEach(function(q) {
 
 // Mobile menu button
 var mobileBtn = document.getElementById('mobile-menu-btn');
-if (mobileBtn) mobileBtn.addEventListener('click', showPalette);
+if (mobileBtn) mobileBtn.addEventListener('click', togglePalette);
 
 // Theme toggle (CSS class + localStorage + optional CM theme switch)
 var themeBtn = document.getElementById('theme-toggle');

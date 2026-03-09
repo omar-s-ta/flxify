@@ -7,7 +7,7 @@
     "Conversion": ["JSONToYAML", "YAMLToJSON", "JSONToCSV", "CSVToJSON", "CSVtoJSONheaderless", "JSONToQueryString", "QueryStringToJSON", "HexToRGB", "rgb2hex", "HexToDec", "HexToASCII", "ASCIIToHex", "DecimalToBinary", "BinaryToDecimal", "DecimalToHex", "WkbToWkt", "WktToWkb", "jsToPhp", "tsvToJson", "JsObjectToJSON", "convertToMarkdownTable", "IOSLocalizablesToAndroidStrings", "AndroidStringsToIOSLocalizables", "DIGI2ASCII", "FishPATHHexConverter"],
     "Text Case": ["Upcase", "Downcase", "CamelCase", "KebabCase", "SnakeCase", "StartCase", "SpongeCase", "toggleCamelHyphen", "Deburr"],
     "Text Manipulation": ["SortLines", "NaturalSortLines", "ReverseLines", "ReverseString", "ShuffleLines", "ShuffleCharacters", "RemoveDuplicateLines", "JoinLines", "JoinLinesWithComma", "JoinLinesWithSpace", "CollapseLines", "Trim", "TrimStart", "TrimEnd", "AddSlashes", "RemoveSlashes", "ReplaceSmartQuotes", "MarkdownQuote", "Rot13", "AddLineNumbers", "RemoveLineNumbers", "SpacesToTabs", "TabsToSpaces", "SortJSON", "LineComparer", "listToHTMLList", "Wadsworth", "Defang", "Refang", "PHPUnserialize", "EscapeLineFeeds", "UnescapeLineFeeds"],
-    "Generation": ["UUIDGenerator", "LoremIpsum", "NewBoopScript", "generateHashtag", "contrastingColor", "CreateProjectGlossaryMarkdown"],
+    "Generation": ["UUIDGenerator", "ULIDGenerator", "LoremIpsum", "NewBoopScript", "generateHashtag", "contrastingColor", "CreateProjectGlossaryMarkdown"],
     "Extraction": ["ExtractURLs", "ExtractEmails", "CountCharacters", "CountWords", "CountLines", "SumAll", "CalculateSize"],
     "Developer Utilities": ["JWTDecode", "RegexEscape", "EvalJavascript", "DateToTimestamp", "DateToUTC", "TimeToSecond", "TestScript"]
   },
@@ -36,6 +36,11 @@
       "title": "UUID Generator - Generate Random UUIDs Online",
       "metaDescription": "Generate random v4 UUIDs online for free. Create single or bulk UUIDs instantly. 100% client-side generation.",
       "keywords": ["uuid generator", "guid generator", "random uuid", "uuid v4", "generate uuid online"]
+    },
+    "ULIDGenerator": {
+      "title": "ULID Generator - Generate Sortable Unique IDs Online",
+      "metaDescription": "Generate ULIDs (Universally Unique Lexicographically Sortable Identifiers) online for free. Time-sortable, Crockford Base32 encoded. 100% client-side.",
+      "keywords": ["ulid generator", "sortable id", "ulid online", "generate ulid", "crockford base32 id"]
     },
     "JWTDecode": {
       "title": "JWT Decoder - Decode JSON Web Tokens Online",

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - 2026-03-09
+
+### Added
+- ULID Generator script — generates Universally Unique Lexicographically Sortable Identifiers
+- Total scripts now at 110
+
 ## [0.1.0] - 2026-03-06
 
 ### Added
