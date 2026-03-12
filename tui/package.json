@@ -1,0 +1,53 @@
+{
+  "name": "@flxify/cli",
+  "version": "1.0.0",
+  "description": "Terminal text utility with 111 transformation scripts, Vim keybindings, command palette, and 6 themes",
+  "author": "Ahmed El Taweel",
+  "homepage": "https://flxify.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahmedeltaweel/flxify",
+    "directory": "tui"
+  },
+  "bugs": {
+    "url": "https://github.com/ahmedeltaweel/flxify/issues"
+  },
+  "keywords": [
+    "cli",
+    "tui",
+    "terminal",
+    "vim",
+    "text",
+    "transform",
+    "json",
+    "base64",
+    "hash",
+    "editor",
+    "command-palette",
+    "developer-tools"
+  ],
+  "bin": {
+    "flxify": "./bin/flxify.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "scripts/",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node bin/flxify.js",
+    "test": "vitest run",
+    "prepublishOnly": "node -e \"var fs=require('fs'),p=require('path');var src=p.resolve(__dirname,'..','scripts');var dst=p.resolve(__dirname,'scripts');if(!fs.existsSync(dst)){fs.mkdirSync(dst);}fs.readdirSync(src).filter(function(f){return f.endsWith('.js')}).forEach(function(f){fs.copyFileSync(p.join(src,f),p.join(dst,f))});var libSrc=p.join(src,'lib');var libDst=p.join(dst,'lib');if(!fs.existsSync(libDst)){fs.mkdirSync(libDst);}fs.readdirSync(libSrc).filter(function(f){return f.endsWith('.js')}).forEach(function(f){fs.copyFileSync(p.join(libSrc,f),p.join(libDst,f))});console.log('Copied scripts to tui/scripts/')\""
+  },
+  "dependencies": {
+    "neo-blessed": "^0.1.12"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "license": "MIT"
+}

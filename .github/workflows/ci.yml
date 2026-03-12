@@ -34,3 +34,12 @@ jobs:
 
       - name: Validate syntax
         run: node --check app.js
+
+      - name: Install TUI dependencies
+        run: cd tui && npm ci
+
+      - name: Run TUI tests
+        run: cd tui && npm test
+
+      - name: Validate TUI syntax
+        run: node --check tui/src/app.js
