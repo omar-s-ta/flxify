@@ -67,6 +67,11 @@ function createEditor(screen, opts) {
   // How many lines have scrolled off the top
   var scrollTop = 0;
 
+  // Cursor color for the current theme (set via applyTheme).
+  // Written as an OSC 12 escape after each render so the terminal block cursor
+  // is always visible, regardless of the terminal's own default cursor color.
+  var cursorColor = null;
+
   // Callbacks
   var onCursorMove = null;
   var onModeChange = null;
@@ -195,8 +200,17 @@ function createEditor(screen, opts) {
 
     // Now render everything (editor content + gutter + status bar) in one pass
     screen.render();
-    // Position cursor AFTER render to avoid blessed's save/restore interference
+    // Position cursor AFTER render to avoid blessed's save/restore interference.
+    // Also explicitly show the cursor — blessed's smartCSR hides it during screen.render()
+    // via \x1b[?25l and does not restore it, since it expects to manage cursor visibility.
     process.stdout.write('\x1b[' + (screenRow + 1) + ';' + (screenCol + 1) + 'H');
+    process.stdout.write('\x1b[?25h'); // show cursor (cnorm)
+    // Set the cursor color via OSC 12 so it's visible against every theme background.
+    // Without this, the terminal uses its own default cursor color which may be
+    // invisible in light mode (white cursor on white background).
+    if (cursorColor) {
+      process.stdout.write('\x1b]12;' + cursorColor + '\x07');
+    }
     screen.program.x = screenCol;
     screen.program.y = screenRow;
   }
@@ -415,9 +429,11 @@ function createEditor(screen, opts) {
 
   /**
    * Pause key handling (e.g., when command palette is open).
+   * Hides the terminal cursor while the editor is inactive.
    */
   function pause() {
     paused = true;
+    process.stdout.write('\x1b[?25l'); // hide cursor while editor is paused
   }
 
   /**
@@ -439,12 +455,13 @@ function createEditor(screen, opts) {
   }
 
   /**
-   * Apply a new theme to the editor box. Updates fg/bg and re-renders.
+   * Apply a new theme to the editor box. Updates fg/bg, cursor color, and re-renders.
    * @param {object} theme  - Theme object from themes.js
    */
   function applyTheme(theme) {
     box.style.fg = theme.textPrimary;
     box.style.bg = theme.bgEditor;
+    cursorColor = theme.editorCursor || null;
     render();
   }
 

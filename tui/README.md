@@ -34,7 +34,7 @@ flxify --theme cyber-neon      # Launch with a specific theme
 | Key | Action |
 |-----|--------|
 | `Ctrl+B` or `Ctrl+P` | Open command palette |
-| `Ctrl+S` | Save file |
+| `Ctrl+S` | Save file (prompts for filename if none open) |
 | `Ctrl+T` | Cycle theme |
 | `Ctrl+Q` or `Ctrl+C` | Quit |
 | `i`, `a`, `o`, `O` | Enter Insert mode |
@@ -45,6 +45,18 @@ flxify --theme cyber-neon      # Launch with a specific theme
 | `/` | Search |
 | `n` / `N` | Next/previous search result |
 | `u` / `Ctrl+R` | Undo/redo |
+
+### Vim Command Mode
+
+Press `:` in Normal mode to open the command bar:
+
+| Command | Action |
+|---------|--------|
+| `:w` | Save file |
+| `:wq` | Save and quit |
+| `:x` | Save and quit (alias for `:wq`) |
+| `:q` | Quit (warns if unsaved changes) |
+| `:q!` | Force quit without saving |
 
 ## Themes
 

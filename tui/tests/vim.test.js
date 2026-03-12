@@ -1171,3 +1171,142 @@ describe('VimStateMachine — round-trip workflow', function () {
     expect(v.buf.getLine(2)).toBe('third');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Colon command mode
+// ---------------------------------------------------------------------------
+describe('VimStateMachine — colon command mode', function () {
+  it(': enters command mode', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    expect(v.vim.commandMode).toBe(true);
+  });
+
+  it('typing builds command buffer', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    key(v.vim, 'q');
+    expect(v.vim.commandBuffer).toBe('wq');
+  });
+
+  it('escape cancels command mode', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    special(v.vim, 'escape');
+    expect(v.vim.commandMode).toBe(false);
+    expect(v.vim.commandBuffer).toBe('');
+  });
+
+  it('enter confirms command and calls onCommand', function () {
+    var v = makeVim('hello');
+    var receivedCmd = null;
+    v.vim.onCommand = function (cmd) { receivedCmd = cmd; };
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    special(v.vim, 'return');
+    expect(v.vim.commandMode).toBe(false);
+    expect(receivedCmd).toBe('w');
+  });
+
+  it('backspace on empty buffer exits command mode', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    special(v.vim, 'backspace');
+    expect(v.vim.commandMode).toBe(false);
+  });
+
+  it('backspace removes last character', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    key(v.vim, 'q');
+    special(v.vim, 'backspace');
+    expect(v.vim.commandBuffer).toBe('w');
+  });
+
+  it('onCommandOpen callback fires when : is pressed', function () {
+    var v = makeVim('hello');
+    var opened = false;
+    v.vim.onCommandOpen = function () { opened = true; };
+    key(v.vim, ':');
+    expect(opened).toBe(true);
+  });
+
+  it('onCommandClose callback fires on escape', function () {
+    var v = makeVim('hello');
+    var closed = false;
+    v.vim.onCommandClose = function () { closed = true; };
+    key(v.vim, ':');
+    special(v.vim, 'escape');
+    expect(closed).toBe(true);
+  });
+
+  it('onCommandClose callback fires on enter', function () {
+    var v = makeVim('hello');
+    var closed = false;
+    v.vim.onCommandClose = function () { closed = true; };
+    v.vim.onCommand = function () {};
+    key(v.vim, ':');
+    key(v.vim, 'q');
+    special(v.vim, 'return');
+    expect(closed).toBe(true);
+  });
+
+  it('onCommandUpdate callback fires on each keystroke', function () {
+    var v = makeVim('hello');
+    var updates = [];
+    v.vim.onCommandUpdate = function (text) { updates.push(text); };
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    key(v.vim, 'q');
+    expect(updates).toEqual(['w', 'wq']);
+  });
+
+  it(':q! command is parsed correctly', function () {
+    var v = makeVim('hello');
+    var receivedCmd = null;
+    v.vim.onCommand = function (cmd) { receivedCmd = cmd; };
+    key(v.vim, ':');
+    key(v.vim, 'q');
+    v.vim.processKey('!', { full: '!', ctrl: false, meta: false, shift: true, name: '!' });
+    special(v.vim, 'return');
+    expect(receivedCmd).toBe('q!');
+  });
+
+  it('command mode does not interfere with normal mode after cancel', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    special(v.vim, 'escape');
+    expect(v.vim.mode).toBe('normal');
+    expect(v.vim.commandMode).toBe(false);
+  });
+
+  it('empty command does not call onCommand', function () {
+    var v = makeVim('hello');
+    var called = false;
+    v.vim.onCommand = function () { called = true; };
+    key(v.vim, ':');
+    special(v.vim, 'return');
+    expect(called).toBe(false);
+  });
+
+  it('C-[ cancels command mode like escape', function () {
+    var v = makeVim('hello');
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    ctrl(v.vim, 'C-[');
+    expect(v.vim.commandMode).toBe(false);
+    expect(v.vim.commandBuffer).toBe('');
+  });
+
+  it('processKey returns command field', function () {
+    var v = makeVim('hello');
+    v.vim.onCommand = function () {};
+    key(v.vim, ':');
+    key(v.vim, 'w');
+    var r = special(v.vim, 'return');
+    expect(r.command).toBe('w');
+  });
+});

@@ -113,6 +113,17 @@ function launch(options) {
     try {
       screen.destroy();
     } catch (_e) {}
+    // Explicitly restore terminal state after blessed teardown.
+    // blessed's screen.destroy() may not fully clean up, especially when
+    // raw ANSI escapes were written directly to stdout (cursor positioning).
+    try {
+      process.stdout.write('\x1b[?1049l');  // Exit alternate screen buffer (rmcup)
+      process.stdout.write('\x1b[?25h');    // Show cursor (cnorm)
+      process.stdout.write('\x1b]112\x07'); // Reset cursor color to terminal default (OSC 112)
+      process.stdout.write('\x1b[0m');      // Reset all terminal attributes (sgr0)
+      process.stdout.write('\x1b[H');       // Move cursor to home position
+      process.stdout.write('\x1b[J');       // Clear screen from cursor down
+    } catch (_e2) {}
     process.stderr.write = _origWrite;
   }
 
@@ -180,43 +191,112 @@ function launch(options) {
   }
 
   // ---------------------------------------------------------------------------
-  // File save — Ctrl+S
+  // File save — Ctrl+S / :w
   // ---------------------------------------------------------------------------
 
   /**
-   * Resolve the save path:
-   *   1. If a file was opened via CLI, save back to that path.
-   *   2. Otherwise, save to ~/.config/flxify/buffer.txt.
-   * @returns {string} Absolute save path
-   */
-  function resolveSavePath() {
-    if (file) {
-      return path.resolve(file);
-    }
-    var configDir = path.join(
-      process.env.HOME || process.env.USERPROFILE || '.',
-      '.config', 'flxify'
-    );
-    return path.join(configDir, 'buffer.txt');
-  }
-
-  /**
    * Save the editor content to disk.
-   * Shows a success or error toast.
+   * If no file path is set, triggers the "Save as" prompt instead.
+   * Shows a success or error toast on direct save.
    */
   function saveFile() {
-    var savePath = resolveSavePath();
+    if (!file) {
+      startSaveAs();
+      return;
+    }
+    var savePath = path.resolve(file);
     try {
-      // Ensure the directory exists (important for the buffer.txt fallback)
       var saveDir = path.dirname(savePath);
       if (!fs.existsSync(saveDir)) {
         fs.mkdirSync(saveDir, { recursive: true });
       }
       fs.writeFileSync(savePath, editor.getText(), 'utf8');
       clearModified();
-      var displayName = file ? path.basename(savePath) : 'buffer.txt';
-      toast.showInfo(screen, 'Saved to ' + displayName, themeEngine.getCurrentTheme());
+      toast.showInfo(screen, 'Saved: ' + path.basename(savePath), themeEngine.getCurrentTheme());
     } catch (err) {
+      toast.showError(screen, 'Error saving: ' + err.message, themeEngine.getCurrentTheme());
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // "Save as" prompt — shown when saving without a file path.
+  //
+  // Reuses the same blessed box pattern as the command bar (:) and search bar (/).
+  // The user types a file path and presses Enter to confirm, Escape to cancel.
+  // After a successful save, the entered path becomes the active file path for
+  // subsequent saves.
+  // ---------------------------------------------------------------------------
+
+  var saveAsMode = false;
+  var saveAsBuffer = '';
+  var saveAsBox = null;
+  /** When true, quit the app after a successful "Save as" (for :wq with no file). */
+  var saveAndQuitAfterSaveAs = false;
+
+  function showSaveAsBar(text) {
+    var t = themeEngine.getCurrentTheme();
+    if (!saveAsBox) {
+      saveAsBox = blessed.box({
+        parent: screen,
+        bottom: 1,
+        left: 0,
+        width: '100%',
+        height: 1,
+        tags: true,
+        style: {
+          fg: t ? t.textPrimary    : 'white',
+          bg: t ? t.paletteInputBg : 'black'
+        }
+      });
+    }
+    saveAsBox.setContent('Save as: ' + (text || ''));
+    screen.render();
+  }
+
+  function hideSaveAsBar() {
+    if (saveAsBox) {
+      saveAsBox.detach();
+      saveAsBox = null;
+    }
+    saveAsMode = false;
+    saveAsBuffer = '';
+    saveAndQuitAfterSaveAs = false;
+    editor.resume();
+    screen.render();
+  }
+
+  function startSaveAs() {
+    saveAsMode = true;
+    saveAsBuffer = '';
+    editor.pause();
+    showSaveAsBar('');
+  }
+
+  function confirmSaveAs() {
+    var savePath = saveAsBuffer.trim();
+    if (!savePath) {
+      hideSaveAsBar();
+      return;
+    }
+    savePath = path.resolve(savePath);
+    try {
+      var saveDir = path.dirname(savePath);
+      if (!fs.existsSync(saveDir)) {
+        fs.mkdirSync(saveDir, { recursive: true });
+      }
+      fs.writeFileSync(savePath, editor.getText(), 'utf8');
+      file = savePath;
+      clearModified();
+      var shouldQuit = saveAndQuitAfterSaveAs;
+      hideSaveAsBar();
+      toast.showInfo(screen, 'Saved: ' + path.basename(savePath), themeEngine.getCurrentTheme());
+      if (shouldQuit) {
+        saveBufferOnExit();
+        safeDestroyScreen();
+        process.exit(0);
+      }
+    } catch (err) {
+      hideSaveAsBar();
       toast.showError(screen, 'Error saving: ' + err.message, themeEngine.getCurrentTheme());
     }
   }
@@ -245,7 +325,7 @@ function launch(options) {
       width: '100%',
       height: 1,
       tags: true,
-      content: '{bold}Unsaved changes. Quit anyway? (y/n){/bold}',
+      content: '{bold}Save changes before closing? [y]es / [n]o / [c]ancel{/bold}',
       style: {
         fg: t ? t.textPrimary : 'white',
         bg: t ? t.colorError  : 'red'
@@ -322,6 +402,92 @@ function launch(options) {
   };
   editor.vim.onSearchUpdate = function (query) {
     showSearchBar(query);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Command bar widget — shown at the bottom when : is pressed in Normal mode.
+  // ---------------------------------------------------------------------------
+  var commandBox = null;
+
+  function showCommandBar(text) {
+    var t = themeEngine.getCurrentTheme();
+    if (!commandBox) {
+      commandBox = blessed.box({
+        parent: screen,
+        bottom: 1,
+        left: 0,
+        width: '100%',
+        height: 1,
+        tags: true,
+        style: {
+          fg: t ? t.textPrimary    : 'white',
+          bg: t ? t.paletteInputBg : 'black'
+        }
+      });
+    }
+    commandBox.setContent(':' + (text || ''));
+    screen.render();
+  }
+
+  function hideCommandBar() {
+    if (commandBox) {
+      commandBox.detach();
+      commandBox = null;
+    }
+    screen.render();
+  }
+
+  // Wire vim command-line callbacks
+  editor.vim.onCommandOpen = function () {
+    showCommandBar('');
+  };
+  editor.vim.onCommandClose = function () {
+    hideCommandBar();
+  };
+  editor.vim.onCommandUpdate = function (text) {
+    showCommandBar(text);
+  };
+  editor.vim.onCommand = function (cmd) {
+    // Defer execution to the next event-loop tick.
+    //
+    // The onCommand callback fires synchronously inside the editor's
+    // screen.on('keypress') handler (the Enter key that confirms a : command).
+    // The save-as keypress handler is registered AFTER the editor's handler on
+    // the same screen emitter.  Because neo-blessed fires ALL 'keypress'
+    // listeners synchronously for each event, the save-as handler runs
+    // immediately after the editor handler — within the same event tick.
+    //
+    // If saveFile() calls startSaveAs() (no file path yet), it sets
+    // saveAsMode = true before the save-as handler fires.  The save-as handler
+    // then sees saveAsMode = true AND full === 'return' (the same Enter
+    // keypress that confirmed the : command) and immediately calls
+    // confirmSaveAs() with an empty buffer — silently cancelling the prompt.
+    //
+    // By deferring with setImmediate, all synchronous listeners for the current
+    // keypress complete first (saveAsMode is still false), then our work runs
+    // on the next tick when no keypress is in flight.
+    setImmediate(function () {
+      if (cmd === 'w') {
+        saveFile();
+      } else if (cmd === 'wq' || cmd === 'x') {
+        if (!file) {
+          // No file path yet — trigger Save As, then quit after save completes
+          saveAndQuitAfterSaveAs = true;
+          saveFile();
+        } else {
+          saveFile();
+          saveBufferOnExit();
+          safeDestroyScreen();
+          process.exit(0);
+        }
+      } else if (cmd === 'q') {
+        attemptQuit();
+      } else if (cmd === 'q!') {
+        saveBufferOnExit();
+        safeDestroyScreen();
+        process.exit(0);
+      }
+    });
   };
 
   // ---------------------------------------------------------------------------
@@ -513,24 +679,86 @@ function launch(options) {
     var full = key && key.full;
     if (ch === 'y' || ch === 'Y') {
       hideQuitConfirm();
+      // Defer saveFile() to the next event-loop tick.
+      //
+      // The save-as keypress handler is registered directly after this handler
+      // on the same screen emitter.  Neo-blessed fires ALL 'keypress' listeners
+      // synchronously for each event.  If we call saveFile() → startSaveAs()
+      // here (synchronously), saveAsMode becomes true before the save-as handler
+      // runs for this same 'y' keypress.  The save-as handler would then append
+      // 'y' to saveAsBuffer, leaking the confirmation key into the filename.
+      //
+      // By deferring with setImmediate, the save-as handler runs first (sees
+      // saveAsMode === false, does nothing), then our save logic runs on the
+      // next tick with no keypress in flight.
+      setImmediate(function () {
+        if (!file) {
+          // No file path yet — trigger Save As, then quit after save completes
+          saveAndQuitAfterSaveAs = true;
+          saveFile();
+        } else {
+          saveFile();
+          saveBufferOnExit();
+          safeDestroyScreen();
+          process.exit(0);
+        }
+      });
+    } else if (ch === 'n' || ch === 'N') {
+      hideQuitConfirm();
       saveBufferOnExit();
       safeDestroyScreen();
       process.exit(0);
-    } else if (ch === 'n' || ch === 'N' || full === 'escape') {
+    } else if (ch === 'c' || ch === 'C' || full === 'escape') {
       hideQuitConfirm();
     }
     // Prevent other handlers from firing during confirmation
+  });
+
+  // Intercept Save As input keypress before all other key handlers
+  screen.on('keypress', function (ch, key) {
+    if (!saveAsMode) return;
+
+    var full = key && key.full;
+
+    if (full === 'escape') {
+      hideSaveAsBar();
+      return;
+    }
+
+    if (full === 'return') {
+      confirmSaveAs();
+      return;
+    }
+
+    if (full === 'backspace') {
+      if (saveAsBuffer.length === 0) {
+        hideSaveAsBar();
+      } else {
+        saveAsBuffer = saveAsBuffer.slice(0, -1);
+        showSaveAsBar(saveAsBuffer);
+      }
+      return;
+    }
+
+    // Printable character
+    if (ch && ch.length === 1 && !(key.ctrl) && !(key.meta)) {
+      saveAsBuffer += ch;
+      showSaveAsBar(saveAsBuffer);
+      return;
+    }
   });
 
   // Save — Ctrl+S
   screen.key(['C-s'], function () {
     if (palette.isVisible()) return;
     if (awaitingQuitConfirm) return;
+    if (saveAsMode) return;
     saveFile();
   });
 
   // Quit on Ctrl+Q — check for unsaved changes
   screen.key(['C-q'], function () {
+    if (saveAsMode) return;
     if (palette.isVisible()) {
       palette.hide();
       return;
@@ -545,7 +773,12 @@ function launch(options) {
   //   - Visual mode:  exit visual to Normal (handled in vim.js)
   //   - Palette open: close palette
   //   - Confirm open: cancel confirmation
+  //   - Save As open: cancel Save As
   screen.key(['C-c'], function () {
+    if (saveAsMode) {
+      hideSaveAsBar();
+      return;
+    }
     if (palette.isVisible()) {
       palette.hide();
       return;
@@ -566,6 +799,7 @@ function launch(options) {
   // Command Palette — Ctrl+B (primary, matches web app)
   screen.key(['C-b'], function () {
     if (awaitingQuitConfirm) return;
+    if (saveAsMode) return;
     if (palette.isVisible()) {
       palette.hide();
     } else {
@@ -576,6 +810,7 @@ function launch(options) {
   // Command Palette — Ctrl+P (secondary, VS Code convention)
   screen.key(['C-p'], function () {
     if (awaitingQuitConfirm) return;
+    if (saveAsMode) return;
     if (palette.isVisible()) {
       palette.hide();
     } else {
@@ -587,6 +822,7 @@ function launch(options) {
   screen.key(['C-t'], function () {
     if (palette.isVisible()) return;
     if (awaitingQuitConfirm) return;
+    if (saveAsMode) return;
 
     var newThemeName = themeEngine.cycleTheme();
     // Persist the new theme preference

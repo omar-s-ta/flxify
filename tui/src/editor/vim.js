@@ -60,6 +60,14 @@ function VimStateMachine(buffer) {
   this.onSearchOpen = null;   // function() — called when / is pressed
   this.onSearchClose = null;  // function() — called when search closes
   this.onSearchUpdate = null; // function(query) — called on each search keystroke
+
+  // Command mode state (: commands like :w, :wq, :q, :q!)
+  this.commandMode = false;
+  this.commandBuffer = '';
+  this.onCommand = null;       // function(cmd) — called when command is confirmed
+  this.onCommandOpen = null;   // function() — called when : is pressed
+  this.onCommandClose = null;  // function() — called when command mode closes
+  this.onCommandUpdate = null; // function(text) — called on each command keystroke
 }
 
 // ---------------------------------------------------------------------------
@@ -601,6 +609,18 @@ VimStateMachine.prototype._visualToggleCase = function () {
 VimStateMachine.prototype.processKey = function (ch, key) {
   var full = (key && key.full) || '';
 
+  // Handle command input mode (: commands) — overrides all other modes
+  if (this.commandMode) {
+    var cr = this._processCommandKey(ch, key);
+    return {
+      mode: this.mode,
+      render: cr.render,
+      modeChanged: false,
+      message: cr.message || null,
+      command: cr.command || null
+    };
+  }
+
   // Handle search input mode first (overrides all other modes)
   if (this.searchMode) {
     var sr = this._processSearchKey(ch, key);
@@ -930,6 +950,14 @@ VimStateMachine.prototype._processNormalKey = function (ch, key, full) {
     return this._result(true, false, null);
   }
 
+  // --- Colon command mode (:w, :wq, :q, :q!) ---
+  if (ch === ':') {
+    this.commandMode = true;
+    this.commandBuffer = '';
+    if (typeof this.onCommandOpen === 'function') this.onCommandOpen();
+    return this._result(false, false, null);
+  }
+
   // --- Pending operators (two-key sequences) ---
   // NOTE: These operators must save the already-consumed count (n) so that
   // _processPendingKey can use it. We store it in this._pendingCount.
@@ -1154,6 +1182,56 @@ VimStateMachine.prototype._processPendingKey = function (ch, key, full) {
   // (e.g., user pressed 'd' then 'j' — in real Vim this would do a motion delete,
   //  but we keep it simple and just cancel the pending state)
   return this._result(false, false, null);
+};
+
+// ---------------------------------------------------------------------------
+// Command-line mode key handler (:w, :wq, :q, :q!)
+// ---------------------------------------------------------------------------
+
+/**
+ * Process a key in command-line mode (after : was pressed).
+ * @param {string|null} ch
+ * @param {object} key
+ * @returns {{ render: boolean, command: string|null, message: string|null }}
+ */
+VimStateMachine.prototype._processCommandKey = function (ch, key) {
+  var full = (key && key.full) || '';
+
+  if (full === 'escape' || full === 'C-[') {
+    this.commandMode = false;
+    this.commandBuffer = '';
+    if (typeof this.onCommandClose === 'function') this.onCommandClose();
+    return { render: false, command: null };
+  }
+
+  if (full === 'enter' || full === 'return') {
+    var cmd = this.commandBuffer.trim();
+    this.commandMode = false;
+    this.commandBuffer = '';
+    if (typeof this.onCommandClose === 'function') this.onCommandClose();
+    if (cmd && typeof this.onCommand === 'function') this.onCommand(cmd);
+    return { render: false, command: cmd || null };
+  }
+
+  if (full === 'backspace') {
+    if (this.commandBuffer.length === 0) {
+      this.commandMode = false;
+      if (typeof this.onCommandClose === 'function') this.onCommandClose();
+      return { render: false, command: null };
+    }
+    this.commandBuffer = this.commandBuffer.slice(0, -1);
+    if (typeof this.onCommandUpdate === 'function') this.onCommandUpdate(this.commandBuffer);
+    return { render: false, command: null };
+  }
+
+  // Printable character
+  if (ch && ch.length === 1 && !key.ctrl && !key.meta) {
+    this.commandBuffer += ch;
+    if (typeof this.onCommandUpdate === 'function') this.onCommandUpdate(this.commandBuffer);
+    return { render: false, command: null };
+  }
+
+  return { render: false, command: null };
 };
 
 // ---------------------------------------------------------------------------

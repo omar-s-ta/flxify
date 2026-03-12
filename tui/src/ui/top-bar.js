@@ -36,7 +36,7 @@ function createTopBar(screen, theme) {
   function render() {
     var width = screen.width;
     var brand = ' Flxify';
-    var hints = 'Ctrl+B: Palette  Ctrl+T: Theme  Ctrl+Q: Quit ';
+    var hints = '^B Palette  ^S Save  ^T Theme  ^Q Quit  :w :wq :q ';
     // Pad the space between brand and hints
     var padding = width - brand.length - hints.length;
     if (padding < 1) padding = 1;
