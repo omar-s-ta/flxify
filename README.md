@@ -17,7 +17,7 @@ A developer text utility tool with **112 executable scripts** accessible via a c
 - **6 themes** — Standard Dark/Light, Cyber Neon, Nordic Frost, Monokai Pro, OLED Stealth
 - **Works offline** after first load — no server required, works from `file://` URLs
 - **100% client-side** — your data never leaves your browser
-- **VS Code extension** with the same 111 scripts
+- **VS Code extension** with the same 112 scripts
 - **Terminal CLI** (`@flxify/cli`) with Vim keybindings
 
 ## Quick Start
@@ -34,7 +34,7 @@ flxify                    # launch editor
 flxify file.txt           # open a file
 ```
 
-Vim keybindings, command palette (Ctrl+B), 6 themes (Ctrl+T), and all 111 scripts. See [tui/README.md](tui/README.md) for full docs.
+Vim keybindings, command palette (Ctrl+B), 6 themes (Ctrl+T), and all 112 scripts. See [tui/README.md](tui/README.md) for full docs.
 
 ### VS Code
 

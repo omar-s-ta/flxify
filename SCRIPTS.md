@@ -1,6 +1,6 @@
 # Scripts Reference
 
-All 110 scripts available in Flxify, grouped by category.
+All 112 scripts available in Flxify, grouped by category.
 
 ## Formatting
 
@@ -145,9 +145,11 @@ All 110 scripts available in Flxify, grouped by category.
 |--------|-------------|
 | Extract URLs | Extracts all unique HTTP/HTTPS URLs from text, one per line |
 | Extract Emails | Extracts all unique email addresses from text, one per line |
+| Extract Phone Numbers | Extracts unique US and international phone numbers from text, one per line |
 | Count Characters | Counts the total number of characters in text |
 | Count Words | Counts the total number of words in text |
 | Count Lines | Counts the total number of lines in text |
+| Character Frequency | Count occurrences of each character in text |
 | Sum All | Sums all numbers in text and displays calculation with total |
 | Calculate Size (Bytes) | Calculates UTF-8 byte size of text and displays in bytes, KB, or MB |
 

@@ -1,12 +1,12 @@
 {
   "name": "@flxify/cli",
-  "version": "1.1.0",
-  "description": "Terminal text utility with 111 transformation scripts, Vim keybindings, command palette, and 6 themes",
+  "version": "1.2.0",
+  "description": "Terminal text utility with 112 transformation scripts, Vim keybindings, command palette, and 6 themes",
   "author": "Ahmed El Taweel",
   "homepage": "https://flxify.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ahmedeltaweel/flxify",
+    "url": "git+https://github.com/ahmedeltaweel/flxify.git",
     "directory": "tui"
   },
   "bugs": {
@@ -27,7 +27,7 @@
     "developer-tools"
   ],
   "bin": {
-    "flxify": "./bin/flxify.js"
+    "flxify": "bin/flxify.js"
   },
   "files": [
     "bin/",

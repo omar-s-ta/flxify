@@ -152,6 +152,7 @@ Alternative (skip login): `npx @vscode/vsce publish --pat <YOUR_PAT>`
 | 0.3.0 | Added 2 new scripts (Escape/Unescape Line Feeds), total 109 scripts |
 | 0.4.0 | Added ULID Generator script, total 110 scripts |
 | 0.5.0 | Added Extract Phone Numbers script, total 111 scripts |
+| 0.6.0 | Added Character Frequency script, total 112 scripts |
 
 ## Web-Only Features (NOT in Extension)
 

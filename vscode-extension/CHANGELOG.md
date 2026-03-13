@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-03-13
+
+### Added
+- Character Frequency script — counts occurrences of each character in text, sorted by frequency
+- Total scripts now at 112
+
 ## [0.5.0] - 2026-03-10
 
 ### Added

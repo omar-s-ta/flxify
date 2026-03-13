@@ -21,3 +21,8 @@ The ability to change font, and more importantly font-size.
 ### Multi Editor Spaces
 
 The ability to have multiple files as spaces and switch between them.
+
+
+## link github and npm to main websire. 
+
+## "AI Intent" (Natural Language Operations)
